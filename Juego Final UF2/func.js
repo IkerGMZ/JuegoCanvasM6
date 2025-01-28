@@ -1,6 +1,7 @@
 const roadarea = document.querySelector('.road');
-let player = { step: 5, start: false }; // Añadimos start como false por defecto
+let player = { step: 5, start: false, score: 0, speedIncrement: 0.002 }; // Se redujo el incremento de velocidad
 let keys = { ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false };
+let bestScore = localStorage.getItem('bestScore') || 0; // Recuperar el mejor récord del localStorage
 
 document.addEventListener('keydown', keyDown);
 document.addEventListener('keyup', keyUp);
@@ -26,7 +27,7 @@ function movelines() {
 
 function movevehicle(playercar) {
   let vehicles = document.querySelectorAll('.vehicle');
-  let playercarboun = playercar.getBoundingClientRect(); // Bounding box del coche del jugador
+  let playercarboun = playercar.getBoundingClientRect();
 
   vehicles.forEach(function (item) {
     let othercarboun = item.getBoundingClientRect();
@@ -39,6 +40,10 @@ function movevehicle(playercar) {
         playercarboun.right < othercarboun.left)
     ) {
       player.start = false; // Detener el juego
+      if (player.score > bestScore) {
+        bestScore = player.score; // Actualizar el récord si se superó
+        localStorage.setItem('bestScore', bestScore); // Guardar en localStorage
+      }
       setTimeout(() => {
         location.reload(); // Recargar la página después de 2 segundos
       }, 2000);
@@ -63,6 +68,13 @@ function playarea() {
     movelines();
     movevehicle(playercar); // Pasar la referencia de playercar a movevehicle()
 
+    // Incrementar el progreso continuamente
+    player.score++;
+
+    // Incrementar velocidad con el tiempo (más lento)
+    player.step += player.speedIncrement;
+
+    // Actualizar la posición del coche
     if (keys.ArrowUp && player.y > road.top + 100) {
       player.y = player.y - player.step;
     }
@@ -79,12 +91,25 @@ function playarea() {
     playercar.style.top = player.y + 'px';
     playercar.style.left = player.x + 'px';
 
+    // Mostrar progreso y récord
+    document.querySelector('.score').textContent = `Progreso: ${player.score}`;
+    document.querySelector('.best-score').textContent = `Mejor récord: ${bestScore}`;
+
     window.requestAnimationFrame(playarea);
   }
 }
 
 function init() {
   player.start = true;
+
+  // Crear el marcador de progreso y récord
+  const scoreBoard = document.createElement('div');
+  scoreBoard.setAttribute('class', 'scoreboard');
+  scoreBoard.innerHTML = `
+    <div class="score">Progreso: 0</div>
+    <div class="best-score">Mejor récord: ${bestScore}</div>
+  `;
+  document.body.appendChild(scoreBoard);
 
   // Crear el coche del jugador
   let playercar = document.createElement('div');
